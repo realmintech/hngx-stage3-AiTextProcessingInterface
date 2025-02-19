@@ -1,94 +1,60 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { IoPaperPlane } from "react-icons/io5";
+import Translator from "../components/Translator"; 
 
 const TextProcessingInterface = () => {
   const [inputText, setInputText] = useState("");
   const [messages, setMessages] = useState([]);
   const [language, setLanguage] = useState("en");
+  const [translator, setTranslator] = useState(null);
 
-  // Function to detect language using AI Detector API (if available)
-  const detectLanguageLocally = async (text) => {
-    if (!("ai" in self) || !("languageDetector" in self.ai)) {
-      console.warn("AI Language Detector API is not available.");
-      return null; // Fallback to external API
-    }
-
-    try {
-      const languageDetectorCapabilities =
-        await self.ai.languageDetector.capabilities();
-      const canDetect = languageDetectorCapabilities.capabilities;
-      let detector;
-
-      if (canDetect === "no") {
-        return null; // Fallback if not usable
+  // Initialize Translator on Component Mount
+  useEffect(() => {
+    const initTranslator = async () => {
+      try {
+        const translatorInstance = new Translator();
+        setTranslator(translatorInstance);
+      } catch (error) {
+        console.error("Failed to initialize translator:", error);
       }
-
-      if (canDetect === "readily") {
-        detector = await self.ai.languageDetector.create();
-      } else {
-        detector = await self.ai.languageDetector.create({
-          monitor(m) {
-            m.addEventListener("downloadprogress", (e) => {
-              console.log(`Downloaded ${e.loaded} of ${e.total} bytes.`);
-            });
-          },
-        });
-        await detector.ready;
-      }
-
-      const results = await detector.detect(text);
-      return results.length > 0 ? results[0].detectedLanguage : "Unknown";
-    } catch (error) {
-      console.error("Error detecting language locally:", error);
-      return null;
-    }
-  };
-
-  // Function to send message
+    };
+    initTranslator();
+  }, []);
   const sendMessage = async () => {
     if (!inputText.trim()) {
       alert("Please enter some text.");
       return;
     }
 
-    const newMessage = { text: inputText, language: "Detecting..." };
+    const newMessage = { text: inputText, language };
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputText("");
+  };
+
+  const handleTranslate = async () => {
+    if (!inputText.trim()) {
+      alert("Please enter some text to translate.");
+      return;
+    }
+
+    if (!translator) {
+      console.warn("Translator is not initialized yet.");
+      return;
+    }
+
+    if (!language) {
+      console.error("No target language selected.");
+      alert("Please select a language.");
+      return;
+    }
 
     try {
-      let detectedLanguage = await detectLanguageLocally(inputText);
-
-      if (!detectedLanguage) {
-        // If AI Language Detector is not available, use external API
-        const response = await fetch(
-          "https://chrome-ai-api-url/language-detect",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: inputText }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        detectedLanguage = data.language || "Unknown";
-      }
-
-      setMessages((prevMessages) =>
-        prevMessages.map((msg) =>
-          msg.text === newMessage.text
-            ? { ...msg, language: detectedLanguage }
-            : msg
-        )
-      );
+      console.log(`Translating to: ${language}`);
+      const translatedText = await translator.translate(inputText, language);
+      setMessages((prev) => [...prev, { text: translatedText, language }]);
     } catch (error) {
-      console.error("Error detecting language:", error);
-      alert(
-        "Failed to detect language. Please check your connection and try again."
-      );
+      console.error("Translation failed:", error);
+      alert("Translation failed.");
     }
   };
 
@@ -98,7 +64,6 @@ const TextProcessingInterface = () => {
         <h1 className="text-xl font-semibold text-center mb-4">
           AI-Powered Text Processor
         </h1>
-
         <div className="space-y-4 overflow-y-auto max-h-96 p-4 border rounded-lg bg-gray-50">
           {messages.map((msg, index) => (
             <div key={index} className="p-2 bg-gray-200 rounded shadow">
@@ -107,7 +72,6 @@ const TextProcessingInterface = () => {
             </div>
           ))}
         </div>
-
         <div className="mt-4 flex gap-2">
           <select
             value={language}
@@ -121,11 +85,13 @@ const TextProcessingInterface = () => {
             <option value="tr">Turkish</option>
             <option value="fr">French</option>
           </select>
-          <button className="bg-blue-500 text-white p-2 rounded">
+          <button
+            className="bg-blue-500 text-white p-2 rounded"
+            onClick={handleTranslate}
+          >
             Translate
           </button>
         </div>
-
         <div className="mt-4 flex gap-2">
           <textarea
             value={inputText}
