@@ -93,7 +93,7 @@ const TextProcessingInterface = () => {
     >
       <div className="flex-1 h-[calc(100vh-140px)] overflow-y-auto px-4 pt-8 pb-4">
         <h1 className="text-xl font-bold text-center shadow-lg rounded-lg my-4 py-4 bg-green-900 text-white">
-          AI-Powered Text Translator
+          AI-Powered Text Processing Interface
         </h1>
         {messages.map((msg, index) => (
           <div
