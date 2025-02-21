@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { IoPaperPlane } from "react-icons/io5";
-import Translator from "../components/Translator"; 
+import Translator from "../utils/Translator";
+import { summarizeText } from "../utils/Summarizer";
+import BgImg from "../assets/whatsappBg.jpg";
 
 const TextProcessingInterface = () => {
   const [inputText, setInputText] = useState("");
@@ -8,7 +10,6 @@ const TextProcessingInterface = () => {
   const [language, setLanguage] = useState("en");
   const [translator, setTranslator] = useState(null);
 
-  // Initialize Translator on Component Mount
   useEffect(() => {
     const initTranslator = async () => {
       try {
@@ -20,63 +21,127 @@ const TextProcessingInterface = () => {
     };
     initTranslator();
   }, []);
-  const sendMessage = async () => {
+
+  const countWords = (text) =>
+    text.trim() ? text.trim().split(/\s+/).length : 0;
+
+  const sendMessage = () => {
     if (!inputText.trim()) {
       alert("Please enter some text.");
       return;
     }
 
-    const newMessage = { text: inputText, language };
+    const newMessage = {
+      originalText: inputText,
+      originalLanguage: "English",
+      wordCount: countWords(inputText),
+      translatedText: null,
+      translatedLanguage: null,
+      summary: null,
+    };
+
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputText("");
   };
 
   const handleTranslate = async () => {
-    if (!inputText.trim()) {
-      alert("Please enter some text to translate.");
+    if (messages.length === 0) {
+      alert("No messages to translate.");
       return;
     }
+
+    const lastMessageIndex = 0;
+    const lastMessage = messages[lastMessageIndex];
 
     if (!translator) {
       console.warn("Translator is not initialized yet.");
       return;
     }
 
-    if (!language) {
-      console.error("No target language selected.");
-      alert("Please select a language.");
-      return;
-    }
-
     try {
-      console.log(`Translating to: ${language}`);
-      const translatedText = await translator.translate(inputText, language);
-      setMessages((prev) => [...prev, { text: translatedText, language }]);
+      const translatedText = await translator.translate(
+        lastMessage.originalText,
+        language
+      );
+      setMessages((prevMessages) =>
+        prevMessages.map((msg, index) =>
+          index === lastMessageIndex
+            ? { ...msg, translatedText, translatedLanguage: language }
+            : msg
+        )
+      );
     } catch (error) {
       console.error("Translation failed:", error);
       alert("Translation failed.");
     }
   };
 
+  const handleSummarize = async (index) => {
+    const message = messages[index];
+    if (!message || message.wordCount <= 150) return;
+
+    const summary = await summarizeText(message.originalText);
+    setMessages((prevMessages) =>
+      prevMessages.map((msg, i) => (i === index ? { ...msg, summary } : msg))
+    );
+  };
+
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-6">
-        <h1 className="text-xl font-semibold text-center mb-4">
-          AI-Powered Text Processor
-        </h1>
-        <div className="space-y-4 overflow-y-auto max-h-96 p-4 border rounded-lg bg-gray-50">
-          {messages.map((msg, index) => (
-            <div key={index} className="p-2 bg-gray-200 rounded shadow">
-              <p>{msg.text}</p>
-              <small className="text-gray-600">Language: {msg.language}</small>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 flex gap-2">
+    <div
+      className="flex flex-col min-h-screen bg-cover bg-center relative"
+      style={{ backgroundImage: `url(${BgImg})` }}
+    >
+      {/* Messages Container (Scrollable) */}
+      <div className="flex-1 h-[calc(100vh-140px)] overflow-y-auto px-4 pt-8 pb-4">
+        {messages.map((msg, index) => (
+          <div
+            key={index}
+            className="mb-4 p-4 bg-white/35 backdrop-blur-lg rounded-lg shadow-lg"
+          >
+            {/* Original Text */}
+            <p className="font-semibold text-gray-900">
+              Initial Text ({msg.originalLanguage}):
+              <span className="text-blue-700"> {msg.originalText}</span>
+            </p>
+            <p className="text-gray-600 text-sm">
+              Word Count: <span className="font-bold">{msg.wordCount}</span>
+            </p>
+
+            {/* Summarize Button (Only if word count > 150) */}
+            {msg.wordCount > 150 && !msg.summary && (
+              <button
+                className="mt-2 bg-green-900 text-white px-3 py-1 text-sm rounded-lg shadow cursor-pointer"
+                onClick={() => handleSummarize(index)}
+              >
+                Summarize
+              </button>
+            )}
+
+            {/* Display Summary */}
+            {msg.summary && (
+              <p className="font-semibold mt-2">
+                Summary: <span className="text-red-700">{msg.summary}</span>
+              </p>
+            )}
+
+            {/* Translated Text */}
+            {msg.translatedText && (
+              <p className="font-semibold mt-1">
+                Translated Text ({msg.translatedLanguage}):{" "}
+                <span className="text-green-700">{msg.translatedText}</span>
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Fixed Bottom Input & Controls */}
+      <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg shadow-lg p-4">
+        <div className="flex gap-2">
           <select
             value={language}
             onChange={(e) => setLanguage(e.target.value)}
-            className="border p-2 rounded w-full"
+            className="w-full border-0 p-2 rounded-lg bg-white shadow-sm"
           >
             <option value="en">English</option>
             <option value="pt">Portuguese</option>
@@ -86,24 +151,25 @@ const TextProcessingInterface = () => {
             <option value="fr">French</option>
           </select>
           <button
-            className="bg-blue-500 text-white p-2 rounded"
+            className="bg-green-900 text-white px-4 py-2 rounded-lg shadow cursor-pointer"
             onClick={handleTranslate}
           >
             Translate
           </button>
         </div>
+
         <div className="mt-4 flex gap-2">
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
-            className="border p-2 w-full rounded"
+            className="border-0 p-3 w-full rounded-lg bg-gray-50 shadow-lg focus:ring-2 focus:ring-blue-300"
             placeholder="Enter text..."
           ></textarea>
           <button
             onClick={sendMessage}
-            className="bg-green-500 text-white p-2 rounded"
+            className="bg-green-900 text-white px-4 py-2 rounded-lg shadow cursor-pointer"
           >
-            <IoPaperPlane />
+            <IoPaperPlane size={20} />
           </button>
         </div>
       </div>
