@@ -27,7 +27,7 @@ Ensure you have **Node.js** and **npm** installed on your machine.
 ### Steps
 1. **Clone the repository**
    ```sh
-   git clone https://github.com/realmintech/text-processing-interface.git
+   git clone https://github.com/realmintech/hngx-stage3-AiTextProcessingInterface.git
    cd text-processing-interface
    ```
 2. **Install dependencies**
