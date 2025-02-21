@@ -1,4 +1,3 @@
-// Translator.js
 class Translator {
   constructor() {
     this.isServiceAvailable = false;

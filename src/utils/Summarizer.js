@@ -5,7 +5,6 @@ const options = {
   length: "medium",
 };
 
-// Function to check Summarizer API availability & create instance
 const initializeSummarizer = async () => {
   const available = (await self.ai.summarizer.capabilities()).available;
 
@@ -28,7 +27,6 @@ const initializeSummarizer = async () => {
   return summarizer;
 };
 
-// Function to summarize text
 export const summarizeText = async (text) => {
   const summarizer = await initializeSummarizer();
   if (!summarizer) return "Summarization is not available.";

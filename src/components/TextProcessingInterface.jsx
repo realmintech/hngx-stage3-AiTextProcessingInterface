@@ -91,14 +91,12 @@ const TextProcessingInterface = () => {
       className="flex flex-col min-h-screen bg-cover bg-center relative"
       style={{ backgroundImage: `url(${BgImg})` }}
     >
-      {/* Messages Container (Scrollable) */}
       <div className="flex-1 h-[calc(100vh-140px)] overflow-y-auto px-4 pt-8 pb-4">
         {messages.map((msg, index) => (
           <div
             key={index}
             className="mb-4 p-4 bg-white/35 backdrop-blur-lg rounded-lg shadow-lg"
           >
-            {/* Original Text */}
             <p className="font-semibold text-gray-900">
               Initial Text ({msg.originalLanguage}):
               <span className="text-blue-700"> {msg.originalText}</span>
@@ -107,7 +105,6 @@ const TextProcessingInterface = () => {
               Word Count: <span className="font-bold">{msg.wordCount}</span>
             </p>
 
-            {/* Summarize Button (Only if word count > 150) */}
             {msg.wordCount > 150 && !msg.summary && (
               <button
                 className="mt-2 bg-green-900 text-white px-3 py-1 text-sm rounded-lg shadow cursor-pointer"
@@ -117,14 +114,12 @@ const TextProcessingInterface = () => {
               </button>
             )}
 
-            {/* Display Summary */}
             {msg.summary && (
               <p className="font-semibold mt-2">
                 Summary: <span className="text-red-700">{msg.summary}</span>
               </p>
             )}
 
-            {/* Translated Text */}
             {msg.translatedText && (
               <p className="font-semibold mt-1">
                 Translated Text ({msg.translatedLanguage}):{" "}
@@ -135,7 +130,6 @@ const TextProcessingInterface = () => {
         ))}
       </div>
 
-      {/* Fixed Bottom Input & Controls */}
       <div className="fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg shadow-lg p-4">
         <div className="flex gap-2">
           <select
